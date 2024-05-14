@@ -2,10 +2,16 @@ import React, {useState} from 'react';
 import TagsInput from 'react-tagsinput';
 import 'react-tagsinput/react-tagsinput.css';
 import Dropzone from 'react-dropzone'
+import axios from 'axios';
 
 
 const CreateProduct = (props) => {
-
+    const [product,setProduct] = useState({
+        title: '',
+        sku: '',
+        description: ''
+    })
+    const [image,setImage] = useState(null)
     const [productVariantPrices, setProductVariantPrices] = useState([])
 
     const [productVariants, setProductVariant] = useState([
@@ -14,7 +20,6 @@ const CreateProduct = (props) => {
             tags: []
         }
     ])
-    console.log(typeof props.variants)
     // handle click event of the Add button
     const handleAddClick = () => {
         let all_variants = JSON.parse(props.variants.replaceAll("'", '"')).map(el => el.id)
@@ -74,11 +79,69 @@ const CreateProduct = (props) => {
         return ans;
     }
 
-    // Save product
-    let saveProduct = (event) => {
-        event.preventDefault();
-        // TODO : write your code here to save the product
+    function priceChange(i,val){
+        setProductVariantPrices(productVariantPrices.map((productVariantPrice,index)=>{
+            if (i===index){
+                return{
+                    ...productVariantPrice,
+                    price: val
+                };
+            }
+            else{
+                return productVariantPrice
+            }
+        }))
+
     }
+
+    function handleInput(e){
+        const name = e.target.name
+        const value = e.target.value
+
+        setProduct({
+           ...product,
+            [name]:value
+        })
+
+    }
+    function stockChange(i,val){
+        setProductVariantPrices(productVariantPrices.map((productVariantPrice,index)=>{
+            if (i===index){
+                return{
+                    ...productVariantPrice,
+                    stock: val
+                };
+            }
+            else{
+                return productVariantPrice
+            }
+        }))
+
+    }
+
+    // Save product
+    function saveProduct(e){
+        let data = {
+            "product": product,
+            "image" : image,
+            "productVariants": productVariants,
+            "productVariantPrices": productVariantPrices
+        }
+        console.log(data);
+        
+            axios.post('submit/', {
+              
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: data
+            })
+            .then(res=>console.log(res))
+            .catch(err=>console.log(err))
+
+
+        e.preventDefault();
+   }
 
 
     return (
@@ -90,15 +153,15 @@ const CreateProduct = (props) => {
                             <div className="card-body">
                                 <div className="form-group">
                                     <label htmlFor="">Product Name</label>
-                                    <input type="text" placeholder="Product Name" className="form-control"/>
+                                    <input type="text" placeholder="Product Name" className="form-control" name='title' value={product.title} onChange={handleInput}/>
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="">Product SKU</label>
-                                    <input type="text" placeholder="Product Name" className="form-control"/>
+                                    <input type="text" placeholder="Product Name" className="form-control" name='sku' value={product.sku} onChange={handleInput}/>
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="">Description</label>
-                                    <textarea id="" cols="30" rows="4" className="form-control"></textarea>
+                                    <textarea id="" cols="30" rows="4" className="form-control" name='description' value={product.description} onChange={handleInput}></textarea>
                                 </div>
                             </div>
                         </div>
@@ -109,7 +172,7 @@ const CreateProduct = (props) => {
                                 <h6 className="m-0 font-weight-bold text-primary">Media</h6>
                             </div>
                             <div className="card-body border">
-                                <Dropzone onDrop={acceptedFiles => console.log(acceptedFiles)}>
+                                <Dropzone onDrop={acceptedFiles => setImage(acceptedFiles)}>
                                     {({getRootProps, getInputProps}) => (
                                         <section>
                                             <div {...getRootProps()}>
@@ -201,8 +264,8 @@ const CreateProduct = (props) => {
                                                 return (
                                                     <tr key={index}>
                                                         <td>{productVariantPrice.title}</td>
-                                                        <td><input className="form-control" type="text"/></td>
-                                                        <td><input className="form-control" type="text"/></td>
+                                                        <td><input className="form-control" type="text" value={productVariantPrice.price} onChange={e=>{ priceChange(index, e.target.value)}}/></td>
+                                                        <td><input className="form-control" type="text" value={productVariantPrice.stock} onChange={e=>stockChange(index, e.target.value)}/></td>
                                                     </tr>
                                                 )
                                             })
