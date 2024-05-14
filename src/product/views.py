@@ -3,11 +3,17 @@ from django.views.generic import ListView, CreateView, UpdateView
 from django.shortcuts import redirect
 from product.forms import VariantForm
 from product.models import Variant,Product,ProductVariant, ProductVariantPrice, ProductImage
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt,requires_csrf_token
 from django.http import HttpResponse
 import json
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.views.generic.detail import DetailView
+from django.http import JsonResponse
+
+
+
+
 
 class CreateProductView(generic.TemplateView):
     template_name = 'products/create.html'
@@ -78,11 +84,13 @@ def create_product(request):
         image = body['image']
         productVariants = body['productVariants']
         productVariantPrices = body['productVariantPrices']
-        image = image[0]['path']
+        if image:
+            image = image[0]['path']
 
         prod = Product.objects.create(title=product['title'], sku=product['sku'], description=product['description'])
-        
-        img = ProductImage.objects.create(product=prod, file_path=image)
+        if image:
+            image = image[0]['path']
+            img = ProductImage.objects.create(product=prod, file_path=image)
         
         if prod is not None:
             for item in productVariants:
@@ -114,14 +122,57 @@ def create_product(request):
                                 product_variant_three = prodVarObj
                     obj = ProductVariantPrice.objects.create(product_variant_one=product_variant_one,product_variant_two=product_variant_two,product_variant_three=product_variant_three,price=price,stock=stock,product=prod)
 
-                if obj:
-                    return redirect('product:list.product')
+                
+            return redirect('product:list.product')
                          
 
         return HttpResponse('Data received successfully')
     else:
         return HttpResponse('Only POST requests are allowed')
-    
+
+@csrf_exempt
+def update_product(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        body = data.get('body','')
+        if body is not None:
+            id = body['id']
+            title = body['title']
+            sku = body['sku']
+            description = body['description']
+
+            obj = Product.objects.get(id=id)
+            obj.title = title
+            obj.sku = sku
+            obj.description = description
+
+            obj.save()
+
+            return redirect('product:list.product')
+
+        else:
+            return JsonResponse({'error': 'No data provided'}, status=400)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+class ProductDetailView(DetailView):
+    model = Product
+    template_name = 'products/detail.html'
+    context_object_name = 'product'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        product = context['product']
+
+        productVariants = ProductVariant.objects.filter(product=product.id)
+        productVariantPrices = ProductVariantPrice.objects.filter(product=product.id)
+
+        context.update({'productVariants':productVariants})
+        context.update({'productVariantPrics':productVariantPrices})
+
+        return context
+
 
 
 class BaseVariantView(generic.View):

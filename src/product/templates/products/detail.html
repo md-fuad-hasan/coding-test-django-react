@@ -1,0 +1,119 @@
+{% extends 'backend/base.html' %}
+
+{% block title %} Detail Product {% endblock %}
+
+{% block content %}
+
+{% csrf_token %}
+<script>
+        
+    function saveTitle(){
+        
+        let title = document.getElementById('title').value
+        let sku = document.getElementById('sku').value
+        let description = document.getElementById('descript').value
+        let id = document.getElementById('product_id').innerHTML
+
+        let data = {
+            "title": title,
+            "sku": sku,
+            "description": description,
+            "id": id,
+        }
+        console.log(data);
+        
+        fetch('/product/update/', {
+        method: 'POST',
+        headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: data
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Network response was not ok.');
+      })
+      .then(data => {
+        console.log(data.message); // Data received successfully
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+
+    } 
+    
+</script>
+
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Detail Product</h1>
+        <a href="{% url 'product:list.product' %}" class="float-right btn btn-primary">All Product</a>
+    </div>
+    <div class="d-none " id="product_id">{{product.id}}</div>
+    <section>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow mb-4">
+                    <div class="card-body">
+                        <div className="form-group">
+                            <label htmlFor="">Product Name</label>
+                            <input type="text" placeholder="Product Name" class="form-control" id="title" name='title' value={{product.title}} />
+                        </div>
+                        <div class="form-group">
+                            <label htmlFor="">Product SKU</label>
+                            <input type="text" placeholder="Product Name" class="form-control" id="sku" name='sku' value={{product.sku}}/>
+                        </div>
+                        <div class="form-group">
+                            <label htmlFor="">Description</label>
+                            <textarea  cols="30" rows="4" class="form-control" id="descript" name='description' value={{product.description}} >{{product.description}}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                
+            </div>
+
+            <div className="col-md-6">
+               
+                 
+            </div>
+        </div>
+    </section>
+
+    <button type="button" onClick="saveTitle()" class="btn btn-lg btn-primary">Update</button>
+
+
+
+
+    
+
+
+
+<!-- 
+    {% for productVariant in productVariants %}
+
+    {{productVariant.id}}
+
+
+    {%endfor%}
+        <br>
+    {% for productVariantPrice in productVariantPrics %}
+
+    {{productVariantPrice.product_variant_one.id}}
+    {{productVariantPrice.product_variant_two.id}}
+    {{productVariantPrice.product_variant_three.id}}
+<br>
+
+    {%endfor%} -->
+
+
+
+    
+    <div id="detail">
+        <DetailProduct id="product" data-variants="{{ product|safe }}"></DetailProduct>
+    </div>
+
+    
+
+{% endblock %}
